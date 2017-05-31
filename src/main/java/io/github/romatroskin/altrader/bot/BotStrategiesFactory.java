@@ -18,7 +18,6 @@ import org.knowm.xchange.poloniex.dto.marketdata.PoloniexMarketData;
 import org.knowm.xchange.poloniex.dto.marketdata.PoloniexTicker;
 import org.knowm.xchange.poloniex.service.PoloniexMarketDataService;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -103,6 +102,9 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                 final Balance baseBalance = poloniexExchange.getAccountService()
                         .getAccountInfo().getWallet().getBalance(pair.base);
                 final int endIndex = series.getEnd();
+
+                System.out.println(String.format("+ Available Balance %1$s: %2$.8f", pair.counter.getDisplayName(), counterBalance.getAvailable().doubleValue()));
+                System.out.println(String.format("+ Available Balance %1$s: %2$.8f", pair.base.getDisplayName(), baseBalance.getAvailable().doubleValue()));
                 if(strategy.shouldEnter(endIndex)) {
                     Decimal buyAmount = Decimal.valueOf(counterBalance.getAvailable()
                             .multiply(BigDecimal.valueOf(0.33f)).doubleValue()).dividedBy(newTick.getClosePrice());
@@ -114,7 +116,7 @@ public enum BotStrategiesFactory implements BotTaskRunner {
 
                         LimitOrder order = new LimitOrder.Builder(BID, pair).tradableAmount(
                                 BigDecimal.valueOf(buyAmount.toDouble())).limitPrice(
-                                        BigDecimal.valueOf(entry.getPrice().toDouble())).build();
+                                BigDecimal.valueOf(entry.getPrice().toDouble())).build();
                         String orderInfo = poloniexExchange.getTradeService().placeLimitOrder(order);
                         System.out.println(String.format("[== Placed order BUY #%1$s, price=%2$.8f ==]", orderInfo,
                                 order.getLimitPrice().doubleValue()));
@@ -130,7 +132,7 @@ public enum BotStrategiesFactory implements BotTaskRunner {
 
                         LimitOrder order = new LimitOrder.Builder(ASK, pair).tradableAmount(
                                 BigDecimal.valueOf(sellAmount.toDouble())).limitPrice(
-                                        BigDecimal.valueOf(exit.getPrice().toDouble())).build();
+                                BigDecimal.valueOf(exit.getPrice().toDouble())).build();
                         String orderInfo = poloniexExchange.getTradeService().placeLimitOrder(order);
                         System.out.println(String.format("[== Placed order SELL #%1$s, price=%2$.8f ==]", orderInfo,
                                 order.getLimitPrice().doubleValue()));
@@ -148,6 +150,13 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                     AnalysisCriterion vsBuyAndHold = new VersusBuyAndHoldCriterion(new TotalProfitCriterion());
                     System.out.println(String.format("+ Our profit vs buy-and-hold profit: %1$.8f",
                             vsBuyAndHold.calculate(series, tradingRecord)));
+
+                    System.out.println("================================================================================");
+                    tradingRecord.getTrades().forEach(trade -> System.out.println(String.format(
+                            "BOUGHT: %1$.8f || SOLD: %2$.8f", trade.getEntry().getPrice().toDouble(),
+                            trade.getExit().getPrice().toDouble()))
+                    );
+                    System.out.println("================================================================================");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
