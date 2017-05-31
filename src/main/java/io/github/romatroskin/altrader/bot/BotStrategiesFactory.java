@@ -124,8 +124,7 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                                 order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
                     }
                 } else if(strategy.shouldExit(endIndex)) {
-                    Decimal sellAmount = Decimal.valueOf(baseBalance.getAvailable().doubleValue())
-                            .multipliedBy(Decimal.valueOf(0.33f));
+                    Decimal sellAmount = Decimal.valueOf(baseBalance.getAvailable().doubleValue());
                     boolean exited = tradingRecord.exit(endIndex, newTick.getClosePrice(), sellAmount);
                     if (exited) {
                         Order exit = tradingRecord.getLastExit();
@@ -152,7 +151,7 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                     System.out.println(String.format("+ %2$s Our profit vs buy-and-hold profit: %1$.8f",
                             vsBuyAndHold.calculate(series, tradingRecord), pair.base.getDisplayName()));
 
-                    System.out.println(String.format("== %1$s ================================", pair.counter.getDisplayName()));
+                    System.out.println(String.format("== %1$s ================================", pair.base.getDisplayName()));
                     tradingRecord.getTrades().forEach(trade -> {
                                 double buyPrice = trade.getEntry().getPrice().toDouble();
                                 double sellPrice = trade.getExit().getPrice().toDouble();
