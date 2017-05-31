@@ -118,7 +118,7 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                                 entry.getPrice().toDouble(), entry.getAmount().toDouble(), pair.base.getDisplayName()));
 
                         LimitOrder order = new LimitOrder.Builder(BID, pair).tradableAmount(
-                                BigDecimal.valueOf(buyAmount.toDouble())).limitPrice(marketData.getLowestAsk()).build();
+                                BigDecimal.valueOf(buyAmount.toDouble())).limitPrice(entry.getPrice()).build();
                         String orderInfo = poloniexExchange.getTradeService().placeLimitOrder(order);
                         System.out.println(ansi().fgGreen().a(String.format("[== Placed order BUY #%1$s, %3$s, price=%2$.8f ==]", orderInfo,
                                 order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
@@ -126,13 +126,13 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                 } else if(strategy.shouldExit(endIndex)) {
                     Decimal sellAmount = Decimal.valueOf(baseBalance.getAvailable().doubleValue());
                     boolean exited = tradingRecord.exit(endIndex, newTick.getClosePrice(), sellAmount);
-                    if (exited) {
+                    if (exited && tradingRecord.getLastExit().getPrice().isGreaterThan(tradingRecord.getLastEntry().getPrice())) {
                         Order exit = tradingRecord.getLastExit();
                         System.out.println(String.format("[== Exited with %4$s on %1$d (price=%2$.8f, amount=%3$.8f) ==]", exit.getIndex(),
                                 exit.getPrice().toDouble(), exit.getAmount().toDouble(), pair.base.getDisplayName()));
 
                         LimitOrder order = new LimitOrder.Builder(ASK, pair).tradableAmount(
-                                BigDecimal.valueOf(sellAmount.toDouble())).limitPrice(marketData.getHighestBid()).build();
+                                BigDecimal.valueOf(sellAmount.toDouble())).limitPrice(exit.getPrice()).build();
                         String orderInfo = poloniexExchange.getTradeService().placeLimitOrder(order);
                         System.out.println(ansi().fgRed().a(String.format("[== Placed order SELL #%1$s, %3$s, price=%2$.8f ==]", orderInfo,
                                 order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
