@@ -8,12 +8,15 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.fusesource.jansi.AnsiConsole;
 
 /**
  * Created by romatroskin on 5/25/17.
  */
 public class Main {
     public static void main(String ... aArgs) throws Exception {
+        AnsiConsole.systemInstall();
+
         final Options options = new Options();
         options.addRequiredOption("b", "base", true, "The base currency is what you're wanting to buy/sell (please refer to your trade system api help)");
         options.addRequiredOption("c", "counter", true, "The counter currency is what currency you want to use to pay/receive for your purchase/sale. (please refer to your trade system api help)");
@@ -40,5 +43,7 @@ public class Main {
         } else {
             bot.run(strategy);
         }
+
+        AnsiConsole.systemUninstall();
     }
 }

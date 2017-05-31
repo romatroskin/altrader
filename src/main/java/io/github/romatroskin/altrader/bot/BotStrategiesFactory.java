@@ -28,6 +28,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
+
 import static org.knowm.xchange.dto.Order.OrderType.ASK;
 import static org.knowm.xchange.dto.Order.OrderType.BID;
 
@@ -69,7 +72,7 @@ public enum BotStrategiesFactory implements BotTaskRunner {
     <T> void runStrategy(CurrencyPair pair, ExchangeSpecification spec, Class<T> strategyClazz) throws Exception {
         final long now = new Date().getTime() / 1000;
 
-        System.out.println(String.format("- Strategy: %s", toString()));
+        System.out.println(ansi().eraseScreen().fg(BLUE).a(String.format("- Strategy: %s", toString())).fgDefault());
 
         final PoloniexExchange poloniexExchange = (PoloniexExchange) ExchangeFactory.INSTANCE.createExchange(spec);
         final PoloniexMarketDataService marketDataService = (PoloniexMarketDataService)
@@ -94,8 +97,8 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                         marketData.getHigh24hr().doubleValue(), marketData.getLow24hr().doubleValue(),
                         marketData.getHighestBid().doubleValue(), marketData.getBaseVolume().doubleValue());
                 series.addTick(newTick);
-                System.out.println(String.format("[== New Tick || time: %1$td/%1$tm/%1$tY %1$tH:%1$tM:%1$tS, close price: %2$.8f ==]",
-                        newTick.getEndTime().toGregorianCalendar(), newTick.getClosePrice().toDouble()));
+                System.out.println(ansi().fgBlue().a(String.format("[== New Tick || time: %1$td/%1$tm/%1$tY %1$tH:%1$tM:%1$tS, close price: %2$.8f ==]",
+                        newTick.getEndTime().toGregorianCalendar(), newTick.getClosePrice().toDouble())).fgDefault());
 
                 final Balance counterBalance = poloniexExchange.getAccountService()
                         .getAccountInfo().getWallet().getBalance(pair.counter);
@@ -118,8 +121,8 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                                 BigDecimal.valueOf(buyAmount.toDouble())).limitPrice(
                                 BigDecimal.valueOf(entry.getPrice().toDouble())).build();
                         String orderInfo = poloniexExchange.getTradeService().placeLimitOrder(order);
-                        System.out.println(String.format("[== Placed order BUY #%1$s, price=%2$.8f ==]", orderInfo,
-                                order.getLimitPrice().doubleValue()));
+                        System.out.println(ansi().fgGreen().a(String.format("[== Placed order BUY #%1$s, price=%2$.8f ==]", orderInfo,
+                                order.getLimitPrice().doubleValue())).fgDefault());
                     }
                 } else if(strategy.shouldExit(endIndex)) {
                     Decimal sellAmount = Decimal.valueOf(baseBalance.getAvailable().doubleValue())
@@ -134,8 +137,8 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                                 BigDecimal.valueOf(sellAmount.toDouble())).limitPrice(
                                 BigDecimal.valueOf(exit.getPrice().toDouble())).build();
                         String orderInfo = poloniexExchange.getTradeService().placeLimitOrder(order);
-                        System.out.println(String.format("[== Placed order SELL #%1$s, price=%2$.8f ==]", orderInfo,
-                                order.getLimitPrice().doubleValue()));
+                        System.out.println(ansi().fgRed().a(String.format("[== Placed order SELL #%1$s, price=%2$.8f ==]", orderInfo,
+                                order.getLimitPrice().doubleValue())).fgDefault());
                     }
                 }
 
