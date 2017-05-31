@@ -124,8 +124,8 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                                 order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
                     }
                 } else if(strategy.shouldExit(endIndex)) {
-                    if(newTick.getClosePrice().isGreaterThan(tradingRecord.getLastEntry().getPrice()
-                            .plus(tradingRecord.getLastEntry().getPrice().multipliedBy(Decimal.valueOf(0.1f))))) {
+                    if(tradingRecord.getLastOrder() != null && newTick.getClosePrice().isGreaterThan(tradingRecord.getLastOrder().getPrice()
+                            .plus(tradingRecord.getLastOrder().getPrice().multipliedBy(Decimal.valueOf(0.1f))))) {
                         Decimal sellAmount = Decimal.valueOf(baseBalance.getAvailable().doubleValue());
                         boolean exited = tradingRecord.exit(endIndex, newTick.getClosePrice(), sellAmount);
                         if (exited) {
