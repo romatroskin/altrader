@@ -118,7 +118,7 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                                 entry.getPrice().toDouble(), entry.getAmount().toDouble(), pair.base.getDisplayName()));
 
                         LimitOrder order = new LimitOrder.Builder(BID, pair).tradableAmount(
-                                BigDecimal.valueOf(buyAmount.toDouble())).limitPrice(marketData.getHighestBid()).build();
+                                BigDecimal.valueOf(buyAmount.toDouble())).limitPrice(marketData.getLowestAsk()).build();
                         String orderInfo = poloniexExchange.getTradeService().placeLimitOrder(order);
                         System.out.println(ansi().fgGreen().a(String.format("[== Placed order BUY #%1$s, %3$s, price=%2$.8f ==]", orderInfo,
                                 order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
@@ -132,7 +132,7 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                                 exit.getPrice().toDouble(), exit.getAmount().toDouble(), pair.base.getDisplayName()));
 
                         LimitOrder order = new LimitOrder.Builder(ASK, pair).tradableAmount(
-                                BigDecimal.valueOf(sellAmount.toDouble())).limitPrice(marketData.getLowestAsk()).build();
+                                BigDecimal.valueOf(sellAmount.toDouble())).limitPrice(marketData.getHighestBid()).build();
                         String orderInfo = poloniexExchange.getTradeService().placeLimitOrder(order);
                         System.out.println(ansi().fgRed().a(String.format("[== Placed order SELL #%1$s, %3$s, price=%2$.8f ==]", orderInfo,
                                 order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
