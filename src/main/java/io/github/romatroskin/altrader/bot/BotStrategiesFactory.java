@@ -28,9 +28,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
-
+import static org.fusesource.jansi.Ansi.Color.BLUE;
+import static org.fusesource.jansi.Ansi.ansi;
 import static org.knowm.xchange.dto.Order.OrderType.ASK;
 import static org.knowm.xchange.dto.Order.OrderType.BID;
 
@@ -72,7 +71,7 @@ public enum BotStrategiesFactory implements BotTaskRunner {
     <T> void runStrategy(CurrencyPair pair, ExchangeSpecification spec, Class<T> strategyClazz) throws Exception {
         final long now = new Date().getTime() / 1000;
 
-        System.out.println(ansi().eraseScreen().fg(BLUE).a(String.format("- Strategy: %s", toString())).fgDefault());
+        System.out.println(ansi().fg(BLUE).a(String.format("======== Strategy: %s", toString())).fgDefault());
 
         final PoloniexExchange poloniexExchange = (PoloniexExchange) ExchangeFactory.INSTANCE.createExchange(spec);
         final PoloniexMarketDataService marketDataService = (PoloniexMarketDataService)
@@ -97,8 +96,9 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                         marketData.getHigh24hr().doubleValue(), marketData.getLow24hr().doubleValue(),
                         marketData.getHighestBid().doubleValue(), marketData.getBaseVolume().doubleValue());
                 series.addTick(newTick);
-                System.out.println(ansi().fgBlue().a(String.format("[== New Tick || time: %1$td/%1$tm/%1$tY %1$tH:%1$tM:%1$tS, close price: %2$.8f ==]",
-                        newTick.getEndTime().toGregorianCalendar(), newTick.getClosePrice().toDouble())).fgDefault());
+                System.out.println(ansi().fgBlue().a(String.format("[== New Tick || %3$s || time: %1$td/%1$tm/%1$tY %1$tH:%1$tM:%1$tS, close price: %2$.8f ==]",
+                        newTick.getEndTime().toGregorianCalendar(), newTick.getClosePrice().toDouble(), ticker.getCurrencyPair().base.getDisplayName()))
+                        .fgDefault());
 
                 final Balance counterBalance = poloniexExchange.getAccountService()
                         .getAccountInfo().getWallet().getBalance(pair.counter);
@@ -114,15 +114,14 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                     boolean entered = tradingRecord.enter(endIndex, newTick.getClosePrice(), buyAmount);
                     if (entered) {
                         Order entry = tradingRecord.getLastEntry();
-                        System.out.println(String.format("[== Entered on %1$d (price=%2$.8f, amount=%3$.8f) ==]", entry.getIndex(),
-                                entry.getPrice().toDouble(), entry.getAmount().toDouble()));
+                        System.out.println(String.format("[== Entered with %4$s on %1$d (price=%2$.8f, amount=%3$.8f) ==]", entry.getIndex(),
+                                entry.getPrice().toDouble(), entry.getAmount().toDouble(), pair.base.getDisplayName()));
 
                         LimitOrder order = new LimitOrder.Builder(BID, pair).tradableAmount(
-                                BigDecimal.valueOf(buyAmount.toDouble())).limitPrice(
-                                BigDecimal.valueOf(entry.getPrice().toDouble())).build();
+                                BigDecimal.valueOf(buyAmount.toDouble())).limitPrice(marketData.getHighestBid()).build();
                         String orderInfo = poloniexExchange.getTradeService().placeLimitOrder(order);
-                        System.out.println(ansi().fgGreen().a(String.format("[== Placed order BUY #%1$s, price=%2$.8f ==]", orderInfo,
-                                order.getLimitPrice().doubleValue())).fgDefault());
+                        System.out.println(ansi().fgGreen().a(String.format("[== Placed order BUY #%1$s, %3$s, price=%2$.8f ==]", orderInfo,
+                                order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
                     }
                 } else if(strategy.shouldExit(endIndex)) {
                     Decimal sellAmount = Decimal.valueOf(baseBalance.getAvailable().doubleValue())
@@ -130,36 +129,42 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                     boolean exited = tradingRecord.exit(endIndex, newTick.getClosePrice(), sellAmount);
                     if (exited) {
                         Order exit = tradingRecord.getLastExit();
-                        System.out.println(String.format("[== Exited on %1$d (price=%2$.8f, amount=%3$.8f) ==]", exit.getIndex(),
-                                exit.getPrice().toDouble(), exit.getAmount().toDouble()));
+                        System.out.println(String.format("[== Exited with %4$s on %1$d (price=%2$.8f, amount=%3$.8f) ==]", exit.getIndex(),
+                                exit.getPrice().toDouble(), exit.getAmount().toDouble(), pair.base.getDisplayName()));
 
                         LimitOrder order = new LimitOrder.Builder(ASK, pair).tradableAmount(
-                                BigDecimal.valueOf(sellAmount.toDouble())).limitPrice(
-                                BigDecimal.valueOf(exit.getPrice().toDouble())).build();
+                                BigDecimal.valueOf(sellAmount.toDouble())).limitPrice(marketData.getLowestAsk()).build();
                         String orderInfo = poloniexExchange.getTradeService().placeLimitOrder(order);
-                        System.out.println(ansi().fgRed().a(String.format("[== Placed order SELL #%1$s, price=%2$.8f ==]", orderInfo,
-                                order.getLimitPrice().doubleValue())).fgDefault());
+                        System.out.println(ansi().fgRed().a(String.format("[== Placed order SELL #%1$s, %3$s, price=%2$.8f ==]", orderInfo,
+                                order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
                     }
                 }
 
                 if(tradingRecord.getTradeCount() > 0) {
-                    System.out.println(String.format("+ Trades: %1$d", tradingRecord.getTradeCount()));
+                    System.out.println(String.format("+ %2$s Trades: %1$d", tradingRecord.getTradeCount(), pair.base.getDisplayName()));
                     AnalysisCriterion profitTradesRatio = new AverageProfitableTradesCriterion();
-                    System.out.println(String.format("+ Profitable trades ratio: %1$.8f",
-                            profitTradesRatio.calculate(series, tradingRecord)));
+                    System.out.println(String.format("+ %2$s Profitable trades ratio: %1$.8f",
+                            profitTradesRatio.calculate(series, tradingRecord), pair.base.getDisplayName()));
                     AnalysisCriterion rewardRiskRatio = new RewardRiskRatioCriterion();
-                    System.out.println(String.format("+ Reward-risk ratio: %1$.8f",
-                            rewardRiskRatio.calculate(series, tradingRecord)));
+                    System.out.println(String.format("+ %2$s Reward-risk ratio: %1$.8f",
+                            rewardRiskRatio.calculate(series, tradingRecord), pair.base.getDisplayName()));
                     AnalysisCriterion vsBuyAndHold = new VersusBuyAndHoldCriterion(new TotalProfitCriterion());
-                    System.out.println(String.format("+ Our profit vs buy-and-hold profit: %1$.8f",
-                            vsBuyAndHold.calculate(series, tradingRecord)));
+                    System.out.println(String.format("+ %2$s Our profit vs buy-and-hold profit: %1$.8f",
+                            vsBuyAndHold.calculate(series, tradingRecord), pair.base.getDisplayName()));
 
-                    System.out.println("================================================================================");
-                    tradingRecord.getTrades().forEach(trade -> System.out.println(String.format(
-                            "BOUGHT: %1$.8f || SOLD: %2$.8f", trade.getEntry().getPrice().toDouble(),
-                            trade.getExit().getPrice().toDouble()))
+                    System.out.println(String.format("== %1$s ================================", pair.counter.getDisplayName()));
+                    tradingRecord.getTrades().forEach(trade -> {
+                                double buyPrice = trade.getEntry().getPrice().toDouble();
+                                double sellPrice = trade.getExit().getPrice().toDouble();
+                                System.out.println(ansi().fgDefault()
+                                        .a(sellPrice <= buyPrice ? ansi().fgRed() : ansi().fgGreen())
+                                        .a(String.format("BOUGHT: %1$.8f || SOLD: %2$.8f", buyPrice, sellPrice))
+                                        .fgDefault()
+                                );
+                            }
+
                     );
-                    System.out.println("================================================================================");
+                    System.out.println("================================================================");
                 }
             } catch (Exception e) {
                 e.printStackTrace();

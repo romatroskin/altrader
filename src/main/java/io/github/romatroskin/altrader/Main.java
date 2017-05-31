@@ -1,49 +1,64 @@
 package io.github.romatroskin.altrader;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
 import io.github.romatroskin.altrader.bot.Bot;
 import io.github.romatroskin.altrader.bot.BotAnalyzeFactory;
 import io.github.romatroskin.altrader.bot.BotStrategiesFactory;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
-import org.knowm.xchange.currency.CurrencyPair;
+import io.github.romatroskin.altrader.utils.BotAnalyzeFactoryConverter;
+import io.github.romatroskin.altrader.utils.BotStrategiesFactoryConverter;
+import io.github.romatroskin.altrader.utils.CurrencyPairListConverter;
 import org.fusesource.jansi.AnsiConsole;
+import org.knowm.xchange.currency.CurrencyPair;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.fusesource.jansi.Ansi.ansi;
 
 /**
  * Created by romatroskin on 5/25/17.
  */
+@Parameters(separators = "=")
 public class Main {
-    public static void main(String ... aArgs) throws Exception {
+    @Parameter(names={"--currency-pairs"}, description = "The currency pairs on which bot will trade. (please refer to your trade system api help)",
+            listConverter = CurrencyPairListConverter.class, required = true)
+    private List<CurrencyPair> currencyPairs = new ArrayList<>();
+
+    @Parameter(names={"--apiKey"}, required = true, description = "API Key provided by your trading system (please refer to your trade system api help)")
+    private String apiKey;
+
+    @Parameter(names={"--secretKey"}, required = true, description = "Secret Key provided by your trading system (please refer to your trade system api help)")
+    private String secretKey;
+
+    @Parameter(names={"-s", "--strategy"}, required = true, description = "The strategy which will be used to trade/analyze (cci_correction|global_extrema|moving_momentum|rsi2|ichemoku)",
+            converter = BotStrategiesFactoryConverter.class)
+    private BotStrategiesFactory strategy;
+
+    @Parameter(names={"-a", "--analyze"}, description = "Analyze/Workflow specified strategy live (strategy|workflow)",
+            converter = BotAnalyzeFactoryConverter.class)
+    private BotAnalyzeFactory analyze;
+
+
+    public static void main(String ... argv) throws Exception {
         AnsiConsole.systemInstall();
 
-        final Options options = new Options();
-        options.addRequiredOption("b", "base", true, "The base currency is what you're wanting to buy/sell (please refer to your trade system api help)");
-        options.addRequiredOption("c", "counter", true, "The counter currency is what currency you want to use to pay/receive for your purchase/sale. (please refer to your trade system api help)");
-        options.addRequiredOption("s", "strategy", true, "The strategy which will be used to trade/analyze (cci_correction|global_extrema|moving_momentum|rsi2)");
-        options.addOption("a", "analyze", true, "Analyze/Workflow specified strategy live (strategy|workflow)");
-        options.addOption(null, "apiKey", true, "API Key provided by your trading system (please refer to your trade system api help)");
-        options.addOption(null, "secretKey", true, "Secret Key provided by your trading system (please refer to your trade system api help)");
+        Main main = new Main();
+        JCommander.newBuilder().addObject(main).build().parse(argv);
+        System.out.print(ansi().eraseScreen());
+        main.run();
 
-        final CommandLineParser parser = new DefaultParser();
-        final CommandLine cmd = parser.parse(options, aArgs);
+        AnsiConsole.systemUninstall();
+    }
 
-
-        final CurrencyPair currencyPair = new CurrencyPair(cmd.getOptionValue("b"), cmd.getOptionValue("c"));
-        final String apiKey = cmd.getOptionValue("apiKey");
-        final String secretKey = cmd.getOptionValue("secretKey");
-        final BotStrategiesFactory strategy = BotStrategiesFactory.valueOf(cmd.getOptionValue("s"));
-
-        final Bot bot = new Bot(currencyPair);
-        bot.setApiKeys(apiKey, secretKey);
-        if(cmd.hasOption("a")) {
-            final BotAnalyzeFactory analyze = BotAnalyzeFactory.valueOf(cmd.getOptionValue("a"));
+    private void run() throws Exception {
+        final Bot bot = new Bot(apiKey, secretKey, currencyPairs);
+        if(analyze != null) {
             analyze.setStrategie(strategy);
             bot.run(analyze);
         } else {
             bot.run(strategy);
         }
-
-        AnsiConsole.systemUninstall();
     }
 }
