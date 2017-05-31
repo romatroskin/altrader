@@ -124,21 +124,21 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                                 order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
                     }
                 } else if(strategy.shouldExit(endIndex)) {
-                    Decimal sellAmount = Decimal.valueOf(baseBalance.getAvailable().doubleValue());
-                    boolean exited = tradingRecord.exit(endIndex, newTick.getClosePrice(), sellAmount);
-                    if (exited && tradingRecord.getLastExit().getPrice().isGreaterThan(
-                            tradingRecord.getLastEntry().getPrice()
-                                    .plus(tradingRecord.getLastEntry().getPrice()
-                                    .multipliedBy(Decimal.valueOf(0.1f))))) {
-                        Order exit = tradingRecord.getLastExit();
-                        System.out.println(String.format("[== Exited with %4$s on %1$d (price=%2$.8f, amount=%3$.8f) ==]", exit.getIndex(),
-                                exit.getPrice().toDouble(), exit.getAmount().toDouble(), pair.base.getDisplayName()));
+                    if(newTick.getClosePrice().isGreaterThan(tradingRecord.getLastEntry().getPrice()
+                            .plus(tradingRecord.getLastEntry().getPrice().multipliedBy(Decimal.valueOf(0.1f))))) {
+                        Decimal sellAmount = Decimal.valueOf(baseBalance.getAvailable().doubleValue());
+                        boolean exited = tradingRecord.exit(endIndex, newTick.getClosePrice(), sellAmount);
+                        if (exited) {
+                            Order exit = tradingRecord.getLastExit();
+                            System.out.println(String.format("[== Exited with %4$s on %1$d (price=%2$.8f, amount=%3$.8f) ==]", exit.getIndex(),
+                                    exit.getPrice().toDouble(), exit.getAmount().toDouble(), pair.base.getDisplayName()));
 
-                        LimitOrder order = new LimitOrder.Builder(ASK, pair).tradableAmount(
-                                BigDecimal.valueOf(sellAmount.toDouble())).limitPrice(BigDecimal.valueOf(exit.getPrice().toDouble())).build();
-                        String orderInfo = poloniexExchange.getTradeService().placeLimitOrder(order);
-                        System.out.println(ansi().fgRed().a(String.format("[== Placed order SELL #%1$s, %3$s, price=%2$.8f ==]", orderInfo,
-                                order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
+                            LimitOrder order = new LimitOrder.Builder(ASK, pair).tradableAmount(
+                                    BigDecimal.valueOf(sellAmount.toDouble())).limitPrice(BigDecimal.valueOf(exit.getPrice().toDouble())).build();
+                            String orderInfo = poloniexExchange.getTradeService().placeLimitOrder(order);
+                            System.out.println(ansi().fgRed().a(String.format("[== Placed order SELL #%1$s, %3$s, price=%2$.8f ==]", orderInfo,
+                                    order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
+                        }
                     }
                 }
 
