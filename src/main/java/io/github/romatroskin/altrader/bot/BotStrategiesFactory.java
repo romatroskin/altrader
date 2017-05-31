@@ -126,7 +126,10 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                 } else if(strategy.shouldExit(endIndex)) {
                     Decimal sellAmount = Decimal.valueOf(baseBalance.getAvailable().doubleValue());
                     boolean exited = tradingRecord.exit(endIndex, newTick.getClosePrice(), sellAmount);
-                    if (exited && tradingRecord.getLastExit().getPrice().isGreaterThan(tradingRecord.getLastEntry().getPrice())) {
+                    if (exited && tradingRecord.getLastExit().getPrice().isGreaterThan(
+                            tradingRecord.getLastEntry().getPrice()
+                                    .plus(tradingRecord.getLastEntry().getPrice()
+                                    .multipliedBy(Decimal.valueOf(0.45f))))) {
                         Order exit = tradingRecord.getLastExit();
                         System.out.println(String.format("[== Exited with %4$s on %1$d (price=%2$.8f, amount=%3$.8f) ==]", exit.getIndex(),
                                 exit.getPrice().toDouble(), exit.getAmount().toDouble(), pair.base.getDisplayName()));
