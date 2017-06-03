@@ -124,15 +124,14 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                                 order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
                     }
                 } else if(strategy.shouldExit(endIndex)) {
-                    if(tradingRecord.getLastEntry() == null) {
-                        System.out.println(String.format("[== Should exit with %1$s, but not entered yet ==]", pair.base.getDisplayName()));
-                    } else {
+                    if(tradingRecord.getLastEntry() != null && tradingRecord.getLastTrade().isOpened()) {
                         Decimal sellTotal = newTick.getClosePrice().multipliedBy(tradingRecord.getLastEntry().getAmount());
                         Decimal buyTotal = tradingRecord.getLastEntry().getPrice().multipliedBy(tradingRecord.getLastEntry().getAmount());
-                        System.out.println(String.format("[== Should exit with %1$s, was bought %2$.8f without fee, want to sell %3$.8f ==]",
-                                pair.base.getDisplayName(), buyTotal.toDouble(), sellTotal.toDouble()));
+                        System.out.println(String.format("[== Should exit with %1$s, was bought %2$.8f without fee, want to sell %3$.8f, amount %4$.8f ==]",
+                                pair.base.getDisplayName(), buyTotal.toDouble(), sellTotal.toDouble(), tradingRecord.getLastEntry().getAmount().toDouble()));
                         if(sellTotal.isGreaterThan(buyTotal.plus(buyTotal.multipliedBy(Decimal.valueOf(0.01f))))) {
-                            Decimal sellAmount = tradingRecord.getLastEntry().getAmount();
+                            Decimal sellAmount = tradingRecord.getLastEntry().getAmount().isLessThanOrEqual(Decimal.valueOf(baseBalance.getAvailable().doubleValue()))
+                                    ? tradingRecord.getLastEntry().getAmount() : Decimal.valueOf(baseBalance.getAvailable().doubleValue());
                             boolean exited = tradingRecord.exit(endIndex, newTick.getClosePrice(), sellAmount);
                             if (exited) {
                                 Order exit = tradingRecord.getLastExit();
@@ -146,6 +145,8 @@ public enum BotStrategiesFactory implements BotTaskRunner {
                                         order.getLimitPrice().doubleValue(), pair.base.getDisplayName())).fgDefault());
                             }
                         }
+                    } else {
+                        System.out.println(String.format("[== Should exit with %1$s, but no open trades ==]", pair.base.getDisplayName()));
                     }
                 }
 
