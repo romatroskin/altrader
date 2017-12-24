@@ -1,0 +1,23 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+
+group = 'io.github.romatroskin'
+version = '1.0-SNAPSHOT'
+
+description = "Open-Source techical analysis and trading bot platform written on Java"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {        
+     maven { url "http://repo.maven.apache.org/maven2" }
+}
+
+dependencies {
+    compile group: 'com.beust', name: 'jcommander', version:'1.69'
+    compile group: 'org.knowm.xchange', name: 'xchange-core', version:'4.2.0'
+    compile group: 'org.knowm.xchange', name: 'xchange-poloniex', version:'4.2.0'
+    compile group: 'eu.verdelhan', name: 'ta4j', version:'0.8'
+    compile group: 'org.fusesource.jansi', name: 'jansi', version:'1.16'
+    compile group: 'ch.qos.logback', name: 'logback-classic', version:'1.2.3'
+}
