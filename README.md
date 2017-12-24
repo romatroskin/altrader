@@ -2,6 +2,8 @@
 
 ---
 
+[![Build Status](https://travis-ci.org/romatroskin/altrader.svg?branch=master)](https://travis-ci.org/romatroskin/altrader)
+
 ## Description
 
 A techincal analysis bot for trading poloniex using TA and some strategies like, [RSI-2][RSI_URL], [Ichimoku Signals][ICHIMOKU_URL]
